@@ -667,8 +667,13 @@ class MPStaticSet(MPRelaxSet):
         # choose the tighter ediff
         incar["EDIFF"] = min(incar.get("EDIFF", 1), parent_incar["EDIFF"])
 
+
         if self.dummy_elements is True and self.custom_hubbard:
-            keys_required = ["LDAUTYPE","LDAUU","LDAU","LDAUJ","LDAUL", "LDAUPRINT", "LORBIT", "LMAXMIX"]
+
+            if "LMAXMIX" not in incar:
+                incar.update({"LMAXMIX": parent_incar["LMAXMIX"]})
+
+            keys_required = ["LDAUTYPE","LDAUU","LDAU","LDAUJ","LDAUL", "LDAUPRINT", "LORBIT"]
             if set(keys_required).issubset(list(self.custom_hubbard.get("site_specific_hubbard").keys())):
                 incar["LDAUTYPE"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUTYPE"]
                 incar["LDAU"] = self.custom_hubbard.get("site_specific_hubbard")["LDAU"]
@@ -677,7 +682,6 @@ class MPStaticSet(MPRelaxSet):
                 incar["LDAUL"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUL"]
                 incar["LDAUPRINT"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUPRINT"]
                 incar["LORBIT"] = self.custom_hubbard.get("site_specific_hubbard")["LORBIT"]
-                incar["LMAXMIX"] = self.custom_hubbard.get("site_specific_hubbard")["LORBIT"]
             else:
                 raise "You're missing a required key..."
 
