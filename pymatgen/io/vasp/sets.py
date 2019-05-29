@@ -711,6 +711,7 @@ class MPStaticSet(MPRelaxSet):
         if self.custom_hubbard:
             #print("Potcar with custom map!")
             potcar_symbols = []
+            settings = self._config_dict["POTCAR"]
             for el in self.poscar.site_symbols:
                 potcar_symbols.append(settings.get(el, el))
             return Potcar(potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
