@@ -670,8 +670,12 @@ class MPStaticSet(MPRelaxSet):
 
         if self.dummy_elements is True and self.custom_hubbard:
 
-            if "LMAXMIX" not in incar:
-                incar.update({"LMAXMIX": parent_incar["LMAXMIX"]})
+            # contains f-electrons
+            if any([el.Z > 56 for el in structure.composition]):
+                incar['LMAXMIX'] = 6
+            # contains d-electrons
+            elif any([el.Z > 20 for el in structure.composition]):
+                incar['LMAXMIX'] = 4
 
             keys_required = ["LDAUTYPE","LDAUU","LDAU","LDAUJ","LDAUL", "LDAUPRINT", "LORBIT"]
             if set(keys_required).issubset(list(self.custom_hubbard.get("site_specific_hubbard").keys())):
