@@ -690,15 +690,15 @@ class MPStaticSet(MPRelaxSet):
             else:
                 kpoints = Kpoints.gamma_automatic(kpoints.kpts[0])
         return kpoints
-    
+
     @property
     def potcar(self):
         """
-        Potcar object.
+        Potcar object, modified to be able to pass in dummy species with a connected sym_potcar_map
         """
         if self.custom_hubbard:
             print("Potcar with custom map!")
-            return Potcar(self.potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"])
+            return Potcar(self.potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
         else:
             return Potcar(self.potcar_symbols, functional=self.potcar_functional)
 

@@ -1720,17 +1720,19 @@ class Potcar(list, MSONable):
             .pmgrc.yaml.
         sym_potcar_map (dict): Allows a user to specify a specific element
             symbol to raw POTCAR mapping.
+        custom_hubbard (bool): ability to connect dummy species to real species 
+            in sym_potcar_map for passing custom hubbard parameters
     """
 
     FUNCTIONAL_CHOICES = list(PotcarSingle.functional_dir.keys())
 
-    def __init__(self, symbols=None, functional=None, sym_potcar_map=None):
+    def __init__(self, symbols=None, functional=None, sym_potcar_map=None, custom_hubbard=False):
         if functional is None:
             functional = SETTINGS.get("PMG_DEFAULT_FUNCTIONAL", "PBE")
         super().__init__()
         self.functional = functional
         if symbols is not None:
-            self.set_symbols(symbols, functional, sym_potcar_map)
+            self.set_symbols(symbols, functional, sym_potcar_map, custom_hubbard)
 
     def as_dict(self):
         return {"functional": self.functional, "symbols": self.symbols,
@@ -1800,7 +1802,7 @@ class Potcar(list, MSONable):
         return [{"symbol": p.symbol, "hash": p.get_potcar_hash()} for p in self]
 
     def set_symbols(self, symbols, functional=None,
-                    sym_potcar_map=None):
+                    sym_potcar_map=None, custom_hubbard = False):
         """
         Initialize the POTCAR from a set of symbols. Currently, the POTCARs can
         be fetched from a location specified in .pmgrc.yaml. Use pmg config
@@ -1819,6 +1821,10 @@ class Potcar(list, MSONable):
         if sym_potcar_map:
             for el in symbols:
                 self.append(PotcarSingle(sym_potcar_map[el]))
+        elif sym_potcar_map and custom_hubbard:
+            for el in symbols:
+                p = PotcarSingle.from_symbol_and_functional(sym_potcar_map[el], functional)
+                self.append(p)
         else:
             for el in symbols:
                 p = PotcarSingle.from_symbol_and_functional(el, functional)
