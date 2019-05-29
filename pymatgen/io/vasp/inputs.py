@@ -1816,12 +1816,16 @@ class Potcar(list, MSONable):
             sym_potcar_map (dict): A map of symbol:raw POTCAR string. If
                 sym_potcar_map is specified, POTCARs will be generated from
                 the given map data rather than the config file location.
+            custom_hubbard (bool): whether or not a custom hubbard parameter 
+                thats site specific was passed.
         """
         del self[:]
         if sym_potcar_map and not custom_hubbard:
             for el in symbols:
                 self.append(PotcarSingle(sym_potcar_map[el]))
         elif sym_potcar_map and custom_hubbard:
+            #if a custom_hubbard parameter exist, then we map the dummy element to
+            #the real element and get the correct potcar
             for el in symbols:
                 p = PotcarSingle.from_symbol_and_functional(sym_potcar_map[el], functional)
                 self.append(p)

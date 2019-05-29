@@ -670,6 +670,13 @@ class MPStaticSet(MPRelaxSet):
         if self.dummy_elements is True and self.custom_hubbard:
             print("dummy element detected and custom hubbard detected")
             print(self.custom_hubbard)
+            incar["LDAUTYPE"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUTYPE"]
+            incar["LDAU"] = self.custom_hubbard.get("site_specific_hubbard")["LDAU"]
+            incar["LDAUU"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUU"]
+            incar["LDAUJ"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUJ"]
+            incar["LDAUL"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUL"]
+            incar["LDAUPRINT"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUPRINT"]
+            incar["LORBIT"] = self.custom_hubbard.get("site_specific_hubbard")["LORBIT"]
 
         return incar
 
