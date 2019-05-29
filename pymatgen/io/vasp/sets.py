@@ -713,7 +713,7 @@ class MPStaticSet(MPRelaxSet):
             potcar_symbols = []
             for el in self.poscar.site_symbols:
                 potcar_symbols.append(settings.get(el, el))
-            return Potcar(potcar_symbols functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
+            return Potcar(potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
         else:
             return Potcar(self.potcar_symbols, functional=self.potcar_functional)
 
