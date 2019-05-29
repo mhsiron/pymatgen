@@ -98,7 +98,7 @@ class VaspInputSet(MSONable, metaclass=abc.ABCMeta):
         pass
 
     @property
-    def potcar_symbols(self):
+    def potcar_symbols(self, custom_hubbard=False):
         """
         List of POTCAR symbols.
         """
@@ -106,7 +106,7 @@ class VaspInputSet(MSONable, metaclass=abc.ABCMeta):
         potcar_symbols = []
         settings = self._config_dict["POTCAR"]
 
-        if isinstance(settings[elements[-1]], dict):
+        if not custom_hubbard and isinstance(settings[elements[-1]], dict):
             for el in elements:
                 potcar_symbols.append(settings[el]['symbol']
                                       if el in settings else el)
@@ -709,8 +709,8 @@ class MPStaticSet(MPRelaxSet):
         Potcar object, modified to be able to pass in dummy species with a connected sym_potcar_map
         """
         if self.custom_hubbard:
-            print("Potcar with custom map!")
-            return Potcar(self.potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
+            #print("Potcar with custom map!")
+            return Potcar(self.potcar_symbols(True), functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
         else:
             return Potcar(self.potcar_symbols, functional=self.potcar_functional)
 
