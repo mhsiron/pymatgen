@@ -264,6 +264,8 @@ class DictSet(VaspInputSet):
         sym_prec (float): Tolerance for symmetry finding.
         international_monoclinic (bool): Whether to use international convention
             (vs Curtarolo) for monoclinic. Defaults True.
+        custom_hubbard (dict): whether to pass in a custom set of hubbard arguments:
+            needs: {"site_specific_hubbard":{LDAUL = [0,0,0]},"specie_map"{"Xx":"Fe"}}
     """
 
     def __init__(self, structure, config_dict,
@@ -273,7 +275,7 @@ class DictSet(VaspInputSet):
                  potcar_functional="PBE", force_gamma=False,
                  reduce_structure=None, vdw=None,
                  use_structure_charge=False, standardize=False, sym_prec=0.1,
-                 international_monoclinic=True):
+                 international_monoclinic=True, custom_hubbard = None):
         if reduce_structure:
             structure = structure.get_reduced_structure(reduce_structure)
         if sort_structure:
@@ -295,6 +297,8 @@ class DictSet(VaspInputSet):
         self.standardize = standardize
         self.sym_prec = sym_prec
         self.international_monoclinic = international_monoclinic
+        self.custom_hubbard = custom_hubbard if custom_hubbard is not None else False #for custom hubbard map and values
+        self.dummy_elements = False #for checking for dummy elements in set
 
         if self.vdw:
             vdw_par = loadfn(str(MODULE_DIR / "vdW_parameters.yaml"))
@@ -359,7 +363,8 @@ class DictSet(VaspInputSet):
                         mag.append(v.get(site.specie.symbol, 0.6))
                 incar[k] = mag
             elif k in ('LDAUU', 'LDAUJ', 'LDAUL'):
-                if hubbard_u:
+                # only do this is no custom hubbard parameter is passed!
+                if hubbard_u and self.custom_hubbard:
                     if hasattr(structure[0], k.lower()):
                         m = dict([(site.specie.symbol, getattr(site, k.lower()))
                                   for site in structure])
@@ -410,11 +415,16 @@ class DictSet(VaspInputSet):
         if np.product(self.kpoints.kpts) < 4 and incar.get("ISMEAR", 0) == -5:
             incar["ISMEAR"] = 0
 
-        if all([k.is_metal for k in structure.composition.keys()]):
-            if incar.get("NSW", 0) > 0 and incar.get("ISMEAR", 1) < 1:
-                warnings.warn("Relaxation of likely metal with ISMEAR < 1 "
-                              "detected. Please see VASP recommendations on "
-                              "ISMEAR for metals.", BadInputSetWarning)
+        
+        try:
+            if all([k.is_metal for k in structure.composition.keys()]):
+                if incar.get("NSW", 0) > 0 and incar.get("ISMEAR", 1) < 1:
+                    warnings.warn("Relaxation of likely metal with ISMEAR < 1 "
+                                  "detected. Please see VASP recommendations on "
+                                  "ISMEAR for metals.", BadInputSetWarning)
+        except(AttributeError):
+            #this runs only if dummy elements are in the structure
+            self.dummy_elements = True
         return incar
 
     @property
@@ -656,6 +666,11 @@ class MPStaticSet(MPRelaxSet):
         # Compare ediff between previous and staticinputset values,
         # choose the tighter ediff
         incar["EDIFF"] = min(incar.get("EDIFF", 1), parent_incar["EDIFF"])
+
+        if self.dummy_elements is True and self.custom_hubbard:
+            print("dummy element detected and custom hubbard detected")
+            print(self.custom_hubbard)
+
         return incar
 
     @property
@@ -675,6 +690,17 @@ class MPStaticSet(MPRelaxSet):
             else:
                 kpoints = Kpoints.gamma_automatic(kpoints.kpts[0])
         return kpoints
+    
+    @property
+    def potcar(self):
+        """
+        Potcar object.
+        """
+        if self.custom_hubbard:
+            print("Potcar with custom map!")
+            return Potcar(self.potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"])
+        else:
+            return Potcar(self.potcar_symbols, functional=self.potcar_functional)
 
     def override_from_prev_calc(self, prev_calc_dir='.'):
         """
