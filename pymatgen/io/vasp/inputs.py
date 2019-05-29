@@ -1818,7 +1818,7 @@ class Potcar(list, MSONable):
                 the given map data rather than the config file location.
         """
         del self[:]
-        if sym_potcar_map:
+        if sym_potcar_map and not custom_hubbard:
             for el in symbols:
                 self.append(PotcarSingle(sym_potcar_map[el]))
         elif sym_potcar_map and custom_hubbard:
