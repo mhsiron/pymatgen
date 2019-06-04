@@ -603,7 +603,6 @@ class MPStaticSet(MPRelaxSet):
     def __init__(self, structure, prev_incar=None, prev_kpoints=None,
                  lepsilon=False, lcalcpol=False, reciprocal_density=100,
                  small_gap_multiply=None, **kwargs):
-        print(kwargs)
         super().__init__(structure, **kwargs)
         if isinstance(prev_incar, str):
             prev_incar = Incar.from_file(prev_incar)
