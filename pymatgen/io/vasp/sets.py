@@ -603,6 +603,7 @@ class MPStaticSet(MPRelaxSet):
     def __init__(self, structure, prev_incar=None, prev_kpoints=None,
                  lepsilon=False, lcalcpol=False, reciprocal_density=100,
                  small_gap_multiply=None, **kwargs):
+        print(kwargs)
         super().__init__(structure, **kwargs)
         if isinstance(prev_incar, str):
             prev_incar = Incar.from_file(prev_incar)
@@ -767,11 +768,12 @@ class MPStaticSet(MPRelaxSet):
                 and prev_structure and prev_kpoints which are determined from
                 the prev_calc_dir.
         """
+        print(kwargs)
         input_set = cls(_dummy_structure, **kwargs)
-        
+
         #if custom hubbard was passed from a previous calc...
-        if kwargs["other_params"].get("custom_hubbard", False):
-            self.custom_hubbard = kwargs["other_params"].get("custom_hubbard")
+        if kwargs["custom_hubbard"].get("site_specific_hubbard", False):
+            self.custom_hubbard = kwargs["custom_hubbard"]
 
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir)
 
