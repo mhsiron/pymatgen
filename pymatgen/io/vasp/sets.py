@@ -755,7 +755,7 @@ class MPStaticSet(MPRelaxSet):
         return self
 
     @classmethod
-    def from_prev_calc(cls, prev_calc_dir,  **kwargs):
+    def from_prev_calc(cls, prev_calc_dir,  structure_from_prev_run = True,**kwargs):
         """
         Generate a set of Vasp input files for static calculations from a
         directory of previous Vasp run.
