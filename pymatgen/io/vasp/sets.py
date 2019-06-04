@@ -429,7 +429,7 @@ class DictSet(VaspInputSet):
             #this runs only if dummy elements are in the structure
             self.dummy_elements = True
 
-         if self.dummy_elements is True and self.custom_hubbard:
+        if self.dummy_elements is True and self.custom_hubbard:
 
             keys_required = ["LDAUTYPE","LDAUU","LDAU","LDAUJ","LDAUL", "LDAUPRINT", "LORBIT","LMAXMIX"]
             if set(keys_required).issubset(list(self.custom_hubbard.get("site_specific_hubbard").keys())):
