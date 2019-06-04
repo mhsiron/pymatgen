@@ -721,7 +721,7 @@ class MPStaticSet(MPRelaxSet):
         else:
             return Potcar(self.potcar_symbols, functional=self.potcar_functional)
 
-    def override_from_prev_calc(self, prev_calc_dir='.', structure_from_prev_run= True):
+    def override_from_prev_calc(self, prev_calc_dir='.', structure_from_prev_run= True, structure = None):
         """
         Update the input set to include settings from a previous calculation.
 
@@ -734,9 +734,7 @@ class MPStaticSet(MPRelaxSet):
         """
         vasprun, outcar = get_vasprun_outcar(prev_calc_dir)
 
-        self.prev_incar = vasprun.incar
-        self.prev_kpoints = vasprun.kpoints
-
+        
         if self.standardize:
             warnings.warn("Use of standardize=True with from_prev_run is not "
                           "recommended as there is no guarantee the copied "
@@ -744,6 +742,10 @@ class MPStaticSet(MPRelaxSet):
                           "structure.")
         if structure_from_prev_run:
             self._structure = get_structure_from_prev_run(vasprun, outcar)
+            self.prev_incar = vasprun.incar
+            self.prev_kpoints = vasprun.kpoints
+        else:
+            self._structure = structure
 
         # multiply the reciprocal density if needed
         if self.small_gap_multiply:
@@ -768,12 +770,13 @@ class MPStaticSet(MPRelaxSet):
                 the prev_calc_dir.
         """
 
-        input_set = cls(_dummy_structure, **kwargs)
+        input_set = cls(kwargs.get("structure",_dummy_structure), **kwargs)
 
         structure_from_prev_run = kwargs.get("structure_from_prev_run", True)
+        structure = kwargs.get("structure", None)
 
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir, 
-            structure_from_prev_run = structure_from_prev_run)
+            structure_from_prev_run = structure_from_prev_run, structure = structure)
 
 
 class MPHSEBSSet(MPHSERelaxSet):
