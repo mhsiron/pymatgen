@@ -685,21 +685,6 @@ class MPStaticSet(MPRelaxSet):
                 incar["LMAXMIX"] = self.custom_hubbard.get("site_specific_hubbard")["LMAXMIX"]
             else:
                 raise "You're missing a required key..."
-        #if custom hubbard was passed from a previous calc,,,
-        if kwargs["other_params"].get("custom_hubbard", False):
-            self.custom_hubbard = kwargs["other_params"].get("custom_hubbard")
-            keys_required = ["LDAUTYPE","LDAUU","LDAU","LDAUJ","LDAUL", "LDAUPRINT", "LORBIT","LMAXMIX"]
-            if set(keys_required).issubset(list(self.custom_hubbard.get("site_specific_hubbard").keys())):
-                incar["LDAUTYPE"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUTYPE"]
-                incar["LDAU"] = self.custom_hubbard.get("site_specific_hubbard")["LDAU"]
-                incar["LDAUU"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUU"]
-                incar["LDAUJ"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUJ"]
-                incar["LDAUL"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUL"]
-                incar["LDAUPRINT"] = self.custom_hubbard.get("site_specific_hubbard")["LDAUPRINT"]
-                incar["LORBIT"] = self.custom_hubbard.get("site_specific_hubbard")["LORBIT"]
-                incar["LMAXMIX"] = self.custom_hubbard.get("site_specific_hubbard")["LMAXMIX"]
-            else:
-                raise "You're missing a required key..."
 
         return incar
 
@@ -783,6 +768,10 @@ class MPStaticSet(MPRelaxSet):
                 the prev_calc_dir.
         """
         input_set = cls(_dummy_structure, **kwargs)
+        
+        #if custom hubbard was passed from a previous calc...
+        if kwargs["other_params"].get("custom_hubbard", False):
+            self.custom_hubbard = kwargs["other_params"].get("custom_hubbard")
 
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir)
 
