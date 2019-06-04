@@ -771,10 +771,6 @@ class MPStaticSet(MPRelaxSet):
         print(kwargs)
         input_set = cls(_dummy_structure, **kwargs)
 
-        #if custom hubbard was passed from a previous calc...
-        if kwargs["custom_hubbard"].get("site_specific_hubbard", False):
-            self.custom_hubbard = kwargs["custom_hubbard"]
-
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir)
 
 
