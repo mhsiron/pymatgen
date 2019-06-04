@@ -767,7 +767,8 @@ class MPStaticSet(MPRelaxSet):
                 and prev_structure and prev_kpoints which are determined from
                 the prev_calc_dir.
         """
-        print(kwargs.as_dict())
+        for i, v in kwargs.items():
+            print ("    ", i, ": ", v)
         input_set = cls(_dummy_structure, **kwargs)
 
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir)
