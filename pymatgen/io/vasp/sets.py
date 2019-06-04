@@ -388,8 +388,8 @@ class DictSet(VaspInputSet):
                 incar[k] = v
         ## Quick fix for custom hubbard parameters
         has_u = False
-        ldauu_exist = incar.get("LDAU", False)
-        if ldauu_exist:
+        ldauu_exist = incar.get("LDAUU", False)
+        if ldauu_exist and :
             has_u = hubbard_u and sum(incar['LDAUU']) > 0
         if has_u:
             # modify LMAXMIX if LSDA+U and you have d or f electrons
