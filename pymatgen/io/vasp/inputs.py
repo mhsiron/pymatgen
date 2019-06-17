@@ -492,9 +492,9 @@ class Poscar(MSONable):
             coords = site.frac_coords if direct else site.coords
             line = " ".join([format_str.format(c) for c in coords])
             if selective_dynamics is not None:
-                sd = ["F", "F", "F"]
+                sd = ["F", "F", "F"] #set selective dynamics before
                 if selective_dynamics[i] is not None:
-                    sd = ["T" if j else "F" for j in selective_dynamics[i]]
+                    sd = ["T" if j else "F" for j in selective_dynamics[i]] 
                 line += " %s %s %s" % (sd[0], sd[1], sd[2])
             line += " " + site.species_string
             lines.append(line)
