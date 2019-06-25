@@ -770,9 +770,10 @@ class MPStaticSet(MPRelaxSet):
                 the prev_calc_dir.
         """
 
-        print(kwargs.get("structure"))
+        if not kwargs.get("structure", False):
+            kwargs.update({"structure":_dummy_structure})
 
-        input_set = cls(kwargs.get("structure",_dummy_structure), **kwargs)
+        input_set = cls(**kwargs)
 
         structure_from_prev_run = kwargs.get("structure_from_prev_run", True)
         structure = kwargs.get("structure", None)
