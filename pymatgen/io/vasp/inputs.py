@@ -1827,6 +1827,8 @@ class Potcar(list, MSONable):
             #if a custom_hubbard parameter exist, then we map the dummy element to
             #the real element and get the correct potcar
             for el in symbols:
+                print(el)
+                print(sym_potcar_map.get(el, False))
                 p = PotcarSingle.from_symbol_and_functional(sym_potcar_map.get(el,el), functional)
                 self.append(p)
         else:
