@@ -1675,6 +1675,17 @@ class Outcar:
             self.read_nmr_efg()
             self.read_nmr_efg_tensor()
 
+        #Checks to see whether onsite density matrix can be read.
+        self.onsite_density_matrices = False
+        try:
+            self.read_onsite_density_matrices()
+            self.onsite_density_matrices = True
+        except:
+            self.onsite_density_matrices = False
+
+
+
+
         # Store the individual contributions to the final total energy
         final_energy_contribs = {}
         for k in ["PSCENC", "TEWEN", "DENC", "EXHF", "XCENC", "PAW double counting",
@@ -2706,6 +2717,10 @@ class Outcar:
         if self.nmr_efg:
             d.update({"nmr_efg": {"raw": self.data["unsym_efg_tensor"],
                                   "parameters": self.data["efg"]}})
+
+        #Checks whether onsite_density_matrix exits and updates dictionary.
+        if self.onsite_density_matrices:
+            d.update({"onsite_density_matrices":self.data["onsite_density_matrices"]})
 
         return d
 
