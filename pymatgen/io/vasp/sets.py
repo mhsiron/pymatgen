@@ -716,6 +716,10 @@ class MPStaticSet(MPRelaxSet):
             potcar_symbols = []
             settings = self._config_dict["POTCAR"]
             for el in self.poscar.site_symbols:
+                print("@potcar prop: custom_hubbard")
+                print(el)
+                print(settings.get(el, False))
+                print("*****")
                 potcar_symbols.append(settings.get(el, el))
             return Potcar(potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
         else:
