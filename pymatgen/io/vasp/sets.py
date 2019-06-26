@@ -772,8 +772,16 @@ class MPStaticSet(MPRelaxSet):
 
         if not kwargs.get("structure", False):
             kwargs.update({"structure":_dummy_structure})
-        print(cls)
         input_set = cls(**kwargs)
+
+
+        #Test out some debugs..
+        print("Input set from_prev_cal so far:")
+        print(input_set.incar)
+        print(input_set.poscar)
+        print(input_set.kpoints)
+        print(input_set.potcar)
+        print("end of input set...")
 
         structure_from_prev_run = kwargs.get("structure_from_prev_run", True)
         structure = kwargs.get("structure", None)
