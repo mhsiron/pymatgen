@@ -1829,7 +1829,7 @@ class Potcar(list, MSONable):
             for el in symbols:
                 print(el)
                 print(sym_potcar_map.get(el, False))
-                p = PotcarSingle.from_symbol_and_functional(sym_potcar_map.get(el,el), functional)
+                p = PotcarSingle.from_symbol_and_functional(sym_potcar_map.get(el,Element(el)), functional)
                 self.append(p)
         else:
             for el in symbols:
