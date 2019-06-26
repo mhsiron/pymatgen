@@ -162,7 +162,6 @@ class VaspInputSet(MSONable, metaclass=abc.ABCMeta):
                 directory for easier opening by VESTA.
         """
         vinput = self.get_vasp_input()
-        print(vinput)
         vinput.write_input(
             output_dir, make_dir_if_not_present=make_dir_if_not_present)
         if include_cif:
