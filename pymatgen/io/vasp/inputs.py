@@ -1591,7 +1591,6 @@ class PotcarSingle:
             functional = SETTINGS.get("PMG_DEFAULT_FUNCTIONAL", "PBE")
         funcdir = PotcarSingle.functional_dir[functional]
         d = SETTINGS.get("PMG_VASP_PSP_DIR")
-        print(d)
         if d is None:
             raise ValueError(
                 "No POTCAR for %s with functional %s found. "
@@ -1604,9 +1603,7 @@ class PotcarSingle:
         for p in paths_to_try:
             p = os.path.expanduser(p)
             p = zpath(p)
-            print(p)
             if os.path.exists(p):
-                print("exists")
                 return PotcarSingle.from_file(p)
         raise IOError("You do not have the right POTCAR with functional " +
                       "{} and label {} in your VASP_PSP_DIR".format(functional,
@@ -1830,8 +1827,6 @@ class Potcar(list, MSONable):
             #if a custom_hubbard parameter exist, then we map the dummy element to
             #the real element and get the correct potcar
             for el in symbols:
-                print(el)
-                print(sym_potcar_map.get(el, False))
                 p = PotcarSingle.from_symbol_and_functional(sym_potcar_map.get(el,el), functional)
                 self.append(p)
         else:

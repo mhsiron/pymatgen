@@ -716,11 +716,6 @@ class MPStaticSet(MPRelaxSet):
             potcar_symbols = []
             settings = self._config_dict["POTCAR"]
             for el in self.poscar.site_symbols:
-                print("@potcar prop: custom_hubbard")
-                print(el)
-                print(settings.get(el, False))
-                print(settings.get(self.custom_hubbard["map_of_sites"][el], False))
-                print("*****")
                 potcar_symbols.append(settings.get(el, el))
             return Potcar(potcar_symbols, functional=self.potcar_functional, sym_potcar_map = self.custom_hubbard["map_of_sites"], custom_hubbard=True)
         else:
@@ -738,7 +733,6 @@ class MPStaticSet(MPRelaxSet):
             updated using the previous VASP run.
         """
         vasprun, outcar = get_vasprun_outcar(prev_calc_dir)
-
         
         if self.standardize:
             warnings.warn("Use of standardize=True with from_prev_run is not "
@@ -775,20 +769,12 @@ class MPStaticSet(MPRelaxSet):
                 the prev_calc_dir.
         """
 
+
         if not kwargs.get("structure", False):
             kwargs.update({"structure":_dummy_structure})
         input_set = cls(**kwargs)
 
 
-        #Test out some debugs..
-        print("Input set from_prev_cal so far:")
-        print(input_set.incar)
-        print(input_set.poscar)
-        print(input_set.kpoints)
-        print(input_set.potcar)
-        print("end of input set...")
-
-        structure_from_prev_run = kwargs.get("structure_from_prev_run", True)
         structure = kwargs.get("structure", None)
 
         return input_set.override_from_prev_calc(prev_calc_dir=prev_calc_dir, 
