@@ -1604,7 +1604,9 @@ class PotcarSingle:
         for p in paths_to_try:
             p = os.path.expanduser(p)
             p = zpath(p)
+            print(p)
             if os.path.exists(p):
+                print("exists")
                 return PotcarSingle.from_file(p)
         raise IOError("You do not have the right POTCAR with functional " +
                       "{} and label {} in your VASP_PSP_DIR".format(functional,
