@@ -1591,6 +1591,7 @@ class PotcarSingle:
             functional = SETTINGS.get("PMG_DEFAULT_FUNCTIONAL", "PBE")
         funcdir = PotcarSingle.functional_dir[functional]
         d = SETTINGS.get("PMG_VASP_PSP_DIR")
+        print(d)
         if d is None:
             raise ValueError(
                 "No POTCAR for %s with functional %s found. "
