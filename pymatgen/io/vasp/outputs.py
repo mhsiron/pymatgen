@@ -649,24 +649,39 @@ class Vasprun(MSONable):
 
         TODO: Fix for other functional types like PW91, other vdW types, etc.
         """
+        GGA_TYPES = {"RE": "revPBE", "PE": "PBE", "PS": "PBESol", "RP": "RevPBE+PADE", "AM": "AM05", "OR": "optPBE",
+                     "BO": "optB88", "MK": "optB86b", "--": "None or LDA"}
 
-        METAGGA_TYPES = {"TPSS", "RTPSS", "M06L", "MBJL", "SCAN", "MS0", "MS1", "MS2"}
+        METAGGA_TYPES = {"TPSS": "TPSS", "RTPSS": "revTPSS", "M06L": "M06-L", "MBJ": "modified Becke-Johnson",
+                         "SCAN": "SCAN", "MS0": "MadeSimple0", "MS1": "MadeSimple1", "MS2": "MadeSimple2"}
 
-        if self.parameters.get("LHFCALC", False):
+        if self.parameters.get("AEXX", 1.00) == 1.00:
             rt = "HF"
-        elif self.parameters.get("METAGGA", "").strip().upper() in METAGGA_TYPES:
-            rt = self.parameters["METAGGA"].strip().upper()
-        elif self.parameters.get("LUSE_VDW", False):
-            vdw_gga = {"RE": "DF", "OR": "optPBE", "BO": "optB88",
-                       "MK": "optB86b", "ML": "DF2"}
-            gga = self.parameters.get("GGA").upper()
-            rt = "vdW-" + vdw_gga[gga]
+        elif self.parameters.get("HFSCREEN", 0.30) == 0.30:
+            rt = "HSE03"
+        elif self.parameters.get("HFSCREEN", 0.20) == 0.20:
+            rt = "HSE06"
+        elif self.parameters.get("AEXX", 0.20) == 0.20:
+            rt = "B3LYP"
+        elif self.parameters.get("LHFCALC", True):
+            rt = "PBEO or other Hybrid Functional"
+        elif self.parameters.get("BPARAM", 15.70) == 15.70 and self.parameters.get("LUSE_VDW", True):
+            if self.incar.get("METAGGA", "").strip().upper() in METAGGA_TYPES:
+                rt = GGA_TYPES[self.parameters.get("GGA", "").strip().upper()]+"+"+\
+                     METAGGA_TYPES[self.incar.get("METAGGA", "").strip().upper()]+"+rVV10"
+            else:
+                rt = GGA_TYPES[self.parameters.get("GGA", "").strip().upper()]+"+rVV10"
+        elif self.incar.get("METAGGA", "").strip().upper() in METAGGA_TYPES:
+            rt = GGA_TYPES[self.parameters.get("GGA", "").strip().upper()]+"+"+\
+                 METAGGA_TYPES[self.incar.get("METAGGA", "").strip().upper()]
+            if self.is_hubbard or self.parameters.get("LDAU", True):
+                rt += "+U"
         elif self.potcar_symbols[0].split()[0] == 'PAW':
             rt = "LDA"
-        else:
-            rt = "GGA"
-        if self.is_hubbard:
-            rt += "+U"
+        elif self.parameters.get("GGA", "").strip().upper() in GGA_TYPES:
+            rt = GGA_TYPES[self.parameters.get("GGA", "").strip().upper()]
+            if self.is_hubbard or self.parameters.get("LDAU", True):
+                rt += "+U"
         return rt
 
     @property
@@ -1675,16 +1690,12 @@ class Outcar:
             self.read_nmr_efg()
             self.read_nmr_efg_tensor()
 
-        #Checks to see whether onsite density matrix can be read.
-        self.onsite_density_matrices = False
-        try:
+        self.has_onsite_density_matrices = False
+        self.read_pattern({"has_onsite_density_matrices": r"onsite density matrix"},
+                          terminate_on_match=True)
+        if "has_onsite_density_matrices" in self.data:
+            self.has_onsite_density_matrices = True
             self.read_onsite_density_matrices()
-            self.onsite_density_matrices = True
-        except:
-            self.onsite_density_matrices = False
-
-
-
 
         # Store the individual contributions to the final total energy
         final_energy_contribs = {}
@@ -2718,9 +2729,12 @@ class Outcar:
             d.update({"nmr_efg": {"raw": self.data["unsym_efg_tensor"],
                                   "parameters": self.data["efg"]}})
 
-        #Checks whether onsite_density_matrix exits and updates dictionary.
-        if self.onsite_density_matrices:
-            d.update({"onsite_density_matrices":self.data["onsite_density_matrices"]})
+        if self.has_onsite_density_matrices:
+            # cast Spin to str for consistency with electronic_structure
+            # TODO: improve handling of Enum (de)serialization in monty
+            onsite_density_matrices = [{str(k): v for k, v in d.items()}
+                                       for d in self.data["onsite_density_matrices"]]
+            d.update({"onsite_density_matrices": onsite_density_matrices})
 
         return d
 

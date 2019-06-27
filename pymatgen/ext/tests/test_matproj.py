@@ -56,6 +56,13 @@ class MPResterTest(PymatgenTest):
         doc = self.rester.get_doc(mids.pop(0))
         self.assertEqual(doc["pretty_formula"], "Al2O3")
 
+    def test_get_xas_data(self):
+        # Test getting XAS data
+        data = self.rester.get_xas_data("mp-19017", "Li")
+        self.assertEqual("mp-19017,Li", data['mid_and_el'])
+        self.assertAlmostEqual(data['spectrum']['x'][0], 55.178, places=2)
+        self.assertAlmostEqual(data['spectrum']['y'][0], 0.0164634, places=2)
+        
     def test_get_data(self):
         props = ["energy", "energy_per_atom", "formation_energy_per_atom",
                  "nsites", "unit_cell_formula", "pretty_formula", "is_hubbard",
@@ -99,7 +106,7 @@ class MPResterTest(PymatgenTest):
                 obj = self.rester.get_data("mp-19017", prop=prop)[0][prop]
                 self.assertIsInstance(obj, ComputedEntry)
 
-        #Test chemsys search
+        # Test chemsys search
         data = self.rester.get_data('Fe-Li-O', prop='unit_cell_formula')
         self.assertTrue(len(data) > 1)
         elements = {Element("Li"), Element("Fe"), Element("O")}
@@ -357,6 +364,19 @@ class MPResterTest(PymatgenTest):
     def test_get_cohesive_energy(self):
         ecoh = self.rester.get_cohesive_energy("mp-13")
         self.assertTrue(ecoh, 5.04543279)
+
+    def test_get_gb_data(self):
+        mo_gbs = self.rester.get_gb_data(material_id='mp-129')
+        self.assertEqual(len(mo_gbs), 10)
+        mo_gbs_s5 = self.rester.get_gb_data(pretty_formula='Mo', sigma=5)
+        self.assertEqual(len(mo_gbs_s5), 3)
+        mo_s5_001 = self.rester.get_gb_data(chemsys='Mo', sigma=5, gb_plane=[1, 0, 0])
+        self.assertEqual(len(mo_s5_001), 1)
+        gb_f = mo_s5_001[0]['final_structure']
+        self.assertArrayAlmostEqual(gb_f.rotation_axis, [1, 0, 0])
+        self.assertAlmostEqual(gb_f.rotation_angle, 36.86989, places=4)
+        self.assertAlmostEqual(mo_s5_001[0]['gb_energy'], 2.43219, places=2)
+        self.assertIn("Mo80", gb_f.formula)
 
     def test_get_interface_reactions(self):
         kinks = self.rester.get_interface_reactions("LiCoO2", "Li3PS4")

@@ -90,6 +90,10 @@ class VasprunTest(PymatgenTest):
             self.assertTrue(issubclass(w[-1].category,
                                        UserWarning))
 
+    def test_runtype(self):
+        v = Vasprun(self.TEST_FILES_DIR / "vasprun.xml.hse06")
+        self.assertIn(v.run_type, "HSE06")
+
     def test_vdw(self):
         v = Vasprun(self.TEST_FILES_DIR / "vasprun.xml.vdw")
         self.assertAlmostEqual(v.final_energy, -9.78310677)
@@ -923,11 +927,11 @@ class OutcarTest(PymatgenTest):
 
     def test_onsite_density_matrix(self):
         outcar = Outcar(self.TEST_FILES_DIR / "OUTCAR.LinearResponseU.gz")
-        outcar.read_onsite_density_matrices()
         matrices = outcar.data["onsite_density_matrices"]
         self.assertEqual(matrices[0][Spin.up][0][0], 1.0227)
         self.assertEqual(len(matrices[0][Spin.up]), 5)
         self.assertEqual(len(matrices[0][Spin.up][0]), 5)
+        self.assertTrue("onsite_density_matrices" in outcar.as_dict())
 
 
 class BSVasprunTest(PymatgenTest):
