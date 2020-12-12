@@ -3,15 +3,32 @@
 # Distributed under the terms of the MIT License.
 
 
-import unittest
 import os
-from numbers import Number
+import unittest
 import warnings
+from numbers import Number
 from pathlib import Path
-from pymatgen.analysis.phase_diagram import *
-from pymatgen.entries.computed_entries import ComputedEntry
-from pymatgen.core.periodic_table import Element, DummySpecie
+
+import numpy as np
+
+from pymatgen.analysis.phase_diagram import (
+    CompoundPhaseDiagram,
+    GrandPotentialPhaseDiagram,
+    GrandPotPDEntry,
+    PDEntry,
+    PDPlotter,
+    PhaseDiagram,
+    PhaseDiagramError,
+    ReactionDiagram,
+    TransformedPDEntry,
+    tet_coord,
+    triangular_coord,
+    uniquelines,
+    BasePhaseDiagram,
+)
 from pymatgen.core.composition import Composition
+from pymatgen.core.periodic_table import DummySpecies, Element
+from pymatgen.entries.computed_entries import ComputedEntry
 from pymatgen.entries.entry_tools import EntrySet
 
 module_dir = Path(__file__).absolute().parent
@@ -81,7 +98,7 @@ class TransformedPDEntryTest(unittest.TestCase):
         comp = Composition("LiFeO2")
         entry = PDEntry(comp, 53)
         self.transformed_entry = TransformedPDEntry(
-            {DummySpecie("Xa"): 1, DummySpecie("Xb"): 1}, entry
+            {DummySpecies("Xa"): 1, DummySpecies("Xb"): 1}, entry
         )
 
     def test_get_energy(self):
@@ -96,7 +113,7 @@ class TransformedPDEntryTest(unittest.TestCase):
 
     def test_get_composition(self):
         comp = self.transformed_entry.composition
-        expected_comp = Composition({DummySpecie("Xa"): 1, DummySpecie("Xb"): 1})
+        expected_comp = Composition({DummySpecies("Xa"): 1, DummySpecies("Xb"): 1})
         self.assertEqual(comp, expected_comp, "Wrong composition!")
 
     def test_is_element(self):
@@ -231,11 +248,12 @@ class PhaseDiagramTest(unittest.TestCase):
                 1e-11,
                 "Stable entries should have e above hull of zero!",
             )
+
         for entry in self.pd.all_entries:
             if entry not in self.pd.stable_entries:
                 e_ah = self.pd.get_e_above_hull(entry)
-                self.assertGreaterEqual(e_ah, 0)
                 self.assertTrue(isinstance(e_ah, Number))
+                self.assertGreaterEqual(e_ah, 0)
 
     def test_get_equilibrium_reaction_energy(self):
         for entry in self.pd.stable_entries:
@@ -244,6 +262,66 @@ class PhaseDiagramTest(unittest.TestCase):
                 0,
                 "Stable entries should have negative equilibrium reaction energy!",
             )
+
+    def test_get_quasi_e_to_hull(self):
+        for entry in self.pd.unstable_entries:
+            # catch duplicated stable entries
+            if entry.normalize(inplace=False) in self.pd.get_stable_entries_normed():
+                self.assertLessEqual(
+                    self.pd.get_quasi_e_to_hull(entry),
+                    0,
+                    "Duplicated stable entries should have negative decomposition energy!",
+                )
+            else:
+                self.assertGreaterEqual(
+                    self.pd.get_quasi_e_to_hull(entry),
+                    0,
+                    "Unstable entries should have positive decomposition energy!",
+                )
+
+        for entry in self.pd.stable_entries:
+            if entry.composition.is_element:
+                self.assertEqual(
+                    self.pd.get_quasi_e_to_hull(entry),
+                    0,
+                    "Stable elemental entries should have decomposition energy of zero!",
+                )
+            else:
+                self.assertLessEqual(
+                    self.pd.get_quasi_e_to_hull(entry),
+                    0,
+                    "Stable entries should have negative decomposition energy!",
+                )
+
+        novel_stable_entry = PDEntry("Li5FeO4", -999)
+        self.assertLess(
+            self.pd.get_quasi_e_to_hull(novel_stable_entry),
+            0,
+            "Novel stable entries should have negative decomposition energy!",
+        )
+
+        novel_unstable_entry = PDEntry("Li5FeO4", 999)
+        self.assertGreater(
+            self.pd.get_quasi_e_to_hull(novel_unstable_entry),
+            0,
+            "Novel unstable entries should have positive decomposition energy!",
+        )
+
+        duplicate_entry = PDEntry("Li2O", -14.31361175)
+        scaled_dup_entry = PDEntry("Li4O2", -14.31361175 * 2)
+        stable_entry = [e for e in self.pd.stable_entries if e.name == "Li2O"][0]
+
+        self.assertEqual(
+            self.pd.get_quasi_e_to_hull(duplicate_entry),
+            self.pd.get_quasi_e_to_hull(stable_entry),
+            "Novel duplicates of stable entries should have same decomposition energy!",
+        )
+
+        self.assertEqual(
+            self.pd.get_quasi_e_to_hull(scaled_dup_entry),
+            self.pd.get_quasi_e_to_hull(stable_entry),
+            "Novel scaled duplicates of stable entries should have same decomposition energy!",
+        )
 
     def test_get_decomposition(self):
         for entry in self.pd.stable_entries:
@@ -525,6 +603,25 @@ class GrandPotentialPhaseDiagramTest(unittest.TestCase):
 
     def test_str(self):
         self.assertIsNotNone(str(self.pd))
+
+
+class BasePhaseDiagramTest(PhaseDiagramTest):
+    def setUp(self):
+        self.entries = EntrySet.from_csv(str(module_dir / "pdentries_test.csv"))
+        self.pd = BasePhaseDiagram.from_entries(self.entries)
+        warnings.simplefilter("ignore")
+
+    def tearDown(self):
+        warnings.simplefilter("default")
+
+    def test_init(self):
+        pass
+
+    def test_as_dict_from_dict(self):
+        dd = self.pd.as_dict()
+        new_pd = BasePhaseDiagram.from_dict(dd)
+        new_dd = new_pd.as_dict()
+        self.assertEqual(new_dd, dd)
 
 
 class CompoundPhaseDiagramTest(unittest.TestCase):

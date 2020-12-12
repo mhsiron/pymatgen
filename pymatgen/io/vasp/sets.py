@@ -49,7 +49,7 @@ import warnings
 from copy import deepcopy
 from itertools import chain
 from pathlib import Path
-from typing import List, Tuple, Union, Optional
+from typing import List, Optional, Tuple, Union
 from zipfile import ZipFile
 
 import numpy as np
@@ -57,13 +57,14 @@ from monty.dev import deprecated
 from monty.io import zopen
 from monty.json import MSONable
 from monty.serialization import loadfn
+
 from pymatgen.analysis.structure_matcher import StructureMatcher
-from pymatgen.core.periodic_table import Specie, Element
+from pymatgen.core.periodic_table import Element, Species
 from pymatgen.core.sites import PeriodicSite
 from pymatgen.core.structure import Structure
 from pymatgen.io.lobster import Lobsterin
-from pymatgen.io.vasp.inputs import Incar, Poscar, Potcar, Kpoints, VaspInput
-from pymatgen.io.vasp.outputs import Vasprun, Outcar
+from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
+from pymatgen.io.vasp.outputs import Outcar, Vasprun
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.symmetry.bandstructure import HighSymmKpath
 
@@ -308,6 +309,7 @@ class DictSet(VaspInputSet):
         standardize=False,
         sym_prec=0.1,
         international_monoclinic=True,
+        validate_magmom=True,
     ):
         """
         Args:
@@ -372,11 +374,15 @@ class DictSet(VaspInputSet):
             sym_prec (float): Tolerance for symmetry finding.
             international_monoclinic (bool): Whether to use international convention
                 (vs Curtarolo) for monoclinic. Defaults True.
+            validate_magmom (bool): Ensure that the missing magmom values are filled
+                in with the vasp default value of 1.0
         """
         if reduce_structure:
             structure = structure.get_reduced_structure(reduce_structure)
         if sort_structure:
             structure = structure.get_sorted_structure()
+        if validate_magmom:
+            get_valid_magmom_struct(structure, spin_mode="auto", inplace=True)
 
         self._structure = structure
         self._config_dict = deepcopy(config_dict)
@@ -430,7 +436,7 @@ class DictSet(VaspInputSet):
             warnings.warn(
                 "'potcar_functional' argument is deprecated. Use "
                 "'user_potcar_functional' instead.",
-                DeprecationWarning,
+                FutureWarning,
             )
             self.potcar_functional = potcar_functional
         elif user_potcar_functional:
@@ -509,8 +515,20 @@ class DictSet(VaspInputSet):
                     elif hasattr(site.specie, "spin"):
                         mag.append(site.specie.spin)
                     elif str(site.specie) in v:
+                        if site.specie.symbol == "Co":
+                            warnings.warn(
+                                "Co without oxidation state is initialized low spin by default. If this is "
+                                "not desired, please set the spin on the magmom on the site directly to "
+                                "ensure correct initialization"
+                            )
                         mag.append(v.get(str(site.specie)))
                     else:
+                        if site.specie.symbol == "Co":
+                            warnings.warn(
+                                "Co without oxidation state is initialized low spin by default. If this is "
+                                "not desired, please set the spin on the magmom on the site directly to "
+                                "ensure correct initialization"
+                            )
                         mag.append(v.get(site.specie.symbol, 0.6))
                 incar[k] = mag
             elif k in ("LDAUU", "LDAUJ", "LDAUL"):
@@ -791,7 +809,9 @@ class DictSet(VaspInputSet):
 
 
 # Helper functions to determine valid FFT grids for VASP
-def next_num_with_prime_factors(n: int, max_prime_factor: int, must_inc_2: bool = True) -> int:
+def next_num_with_prime_factors(
+    n: int, max_prime_factor: int, must_inc_2: bool = True
+) -> int:
     """
     Return the next number greater than or equal to n that only has the desired prime factors
 
@@ -823,7 +843,7 @@ def primes_less_than(max_val: int) -> List[int]:
     Get the primes less than or equal to the max value
     """
     res = []
-    for i in range(2, max_val+1):
+    for i in range(2, max_val + 1):
         for j in range(2, i):
             if i % j == 0:
                 break
@@ -964,13 +984,13 @@ class MPScanRelaxSet(DictSet):
             updates["SIGMA"] = 0.05
 
         # Don't overwrite things the user has supplied
-        if kwargs.get("user_incar_settings", {}).get("KSPACING"):
+        if self.user_incar_settings.get("KSPACING"):
             del updates["KSPACING"]
 
-        if kwargs.get("user_incar_settings", {}).get("ISMEAR"):
+        if self.user_incar_settings.get("ISMEAR"):
             del updates["ISMEAR"]
 
-        if kwargs.get("user_incar_settings", {}).get("SIGMA"):
+        if self.user_incar_settings.get("SIGMA"):
             del updates["SIGMA"]
 
         if self.vdw:
@@ -1116,9 +1136,7 @@ class MPStaticSet(MPRelaxSet):
         if self.lcalcpol:
             incar["LCALCPOL"] = True
 
-        for k in ["MAGMOM", "NUPDOWN"] + list(
-            self.kwargs.get("user_incar_settings", {}).keys()
-        ):
+        for k in ["MAGMOM", "NUPDOWN"] + list(self.user_incar_settings.keys()):
             # For these parameters as well as user specified settings, override
             # the incar settings.
             if parent_incar.get(k, None) is not None:
@@ -1287,7 +1305,7 @@ class MPScanStaticSet(MPScanRelaxSet):
         if self.lcalcpol:
             incar["LCALCPOL"] = True
 
-        for k in list(self.kwargs.get("user_incar_settings", {}).keys()):
+        for k in list(self.user_incar_settings.keys()):
             # For user specified settings, override
             # the incar settings.
             if parent_incar.get(k, None) is not None:
@@ -1626,7 +1644,7 @@ class MPNonSCFSet(MPRelaxSet):
             # is incompatible with ISMEAR = -5.
             incar.update({"ISMEAR": 0, "SIGMA": 0.01})
 
-        incar.update(self.kwargs.get("user_incar_settings", {}))
+        incar.update(self.user_incar_settings)
 
         if self.mode.lower() in "uniform":
             # Set smaller steps for DOS and optics output
@@ -1645,7 +1663,7 @@ class MPNonSCFSet(MPRelaxSet):
         :return: Kpoints
         """
         # override pymatgen kpoints if provided
-        user_kpoints = self.kwargs.get("user_kpoints_settings", None)
+        user_kpoints = self.user_kpoints_settings
         if isinstance(user_kpoints, Kpoints):
             return user_kpoints
 
@@ -1749,7 +1767,7 @@ class MPNonSCFSet(MPRelaxSet):
                     self.kpoints_line_density * self.small_gap_multiply[1]
                 )
 
-        # automatic setting of nedos using the total energy range and the energy step dedos
+        # automatic setting of nedos using the energy range and the energy step dedos
         if self.nedos == 0:
             emax = max([eigs.max() for eigs in vasprun.eigenvalues.values()])
             emin = min([eigs.min() for eigs in vasprun.eigenvalues.values()])
@@ -1836,7 +1854,7 @@ class MPSOCSet(MPStaticSet):
         incar.update(
             {"ISYM": -1, "LSORBIT": "T", "ICHARG": 11, "SAXIS": list(self.saxis)}
         )
-        incar.update(self.kwargs.get("user_incar_settings", {}))
+        incar.update(self.user_incar_settings)
 
         return incar
 
@@ -1992,7 +2010,7 @@ class MPNMRSet(MPStaticSet):
             isotopes = {ist.split("-")[0]: ist for ist in self.isotopes}
 
             quad_efg = [
-                Specie(p).get_nmr_quadrupole_moment(isotopes.get(p, None))
+                Species(p).get_nmr_quadrupole_moment(isotopes.get(p, None))
                 for p in self.poscar.site_symbols
             ]
 
@@ -2009,7 +2027,7 @@ class MPNMRSet(MPStaticSet):
                     "SIGMA": 0.01,
                 }
             )
-        incar.update(self.kwargs.get("user_incar_settings", {}))
+        incar.update(self.user_incar_settings)
 
         return incar
 
@@ -3173,3 +3191,57 @@ _dummy_structure = Structure(
     [[0, 0, 0]],
     site_properties={"magmom": [[0, 0, 1]]},
 )
+
+
+def get_valid_magmom_struct(structure, inplace=True, spin_mode="auto"):
+    """
+    Make sure that the structure is valid magmoms based on the kind of caculation
+    Fill in missing Magmom values
+
+    Args:
+        structure: The input structure
+        inplace: True - edit the magmom of the input structurel; False - return new structure
+        spin_mode: "scalar"/"vector"/"none"/"auto" only first letter (s/v/n) is needed.
+            dictates how the spin configuration will be determined.
+
+            - auto: read the existing magmom values and decide
+            - scalar: use a single scalar value (for spin up/down)
+            - vector: use a vector value for spin-orbit systems
+            - none: Remove all the magmom information
+
+    Returns:
+        New structure if inplace == False
+    """
+    default_values = {"s": 1.0, "v": [1.0, 1.0, 1.0], "n": None}
+    if spin_mode[0].lower() == "a":
+        mode = "n"
+        for isite in structure.sites:
+            if "magmom" not in isite.properties or isite.properties["magmom"] is None:
+                pass
+            elif isinstance(isite.properties["magmom"], float):
+                if mode == "v":
+                    raise TypeError("Magmom type conflict")
+                mode = "s"
+            elif len(isite.properties["magmom"]) == 3:
+                if mode == "s":
+                    raise TypeError("Magmom type conflict")
+                mode = "v"
+            else:
+                raise TypeError("Unrecognized Magmom Value")
+    else:
+        mode = spin_mode[0].lower()
+
+    if not inplace:
+        new_struct = structure.copy()
+    else:
+        new_struct = structure
+    for isite in new_struct.sites:
+        if mode == "n":
+            if "magmom" in isite.properties:
+                isite.properties.pop("magmom")
+        elif "magmom" not in isite.properties or isite.properties["magmom"] is None:
+            isite.properties["magmom"] = default_values[mode]
+
+    if not inplace:
+        return new_struct
+    return None
