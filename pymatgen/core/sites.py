@@ -25,7 +25,147 @@ class Marker(collections.abc.Hashable, MSONable):
     A representation in a structure, for example to mark the place of an
      adsorption site without adding an actual adsorbate.
     """
-    pass
+
+    def __init__(
+            self,
+            label: str,
+            coords: Union[Tuple, List, np.ndarray],
+            properties: dict = None,
+    ):
+        self.label = label
+        self.coords = coords
+        self.properties = properties
+
+    @property
+    def label(self) -> str:
+        """
+        :return: The label on the marker
+        """
+        return self.label  # type: ignore
+
+    @label.setter
+    def species(self, label):
+        self.label = label
+
+    @property
+    def x(self):
+        """
+        Cartesian x coordinate
+        """
+        return self.coords[0]
+
+    @x.setter
+    def x(self, x: float):
+        self.coords[0] = x  # type: ignore
+
+    @property
+    def y(self):
+        """
+        Cartesian y coordinate
+        """
+        return self.coords[1]
+
+    @y.setter
+    def y(self, y: float):
+        self.coords[1] = y  # type: ignore
+
+    @property
+    def z(self):
+        """
+        Cartesian z coordinate
+        """
+        return self.coords[2]
+
+    @z.setter
+    def z(self, z: float):
+        self.coords[2] = z  # type: ignore
+
+    def distance(self, other):
+        """
+        Get distance between two marker.
+
+        Args:
+            other: Other Marker.
+
+        Returns:
+            Distance (float)
+        """
+        return np.linalg.norm(other.coords - self.coords)
+
+    def distance_from_point(self, pt):
+        """
+        Returns distance between the Marker and a point in space.
+
+        Args:
+            pt: Cartesian coordinates of point.
+
+        Returns:
+            Distance (float)
+        """
+        return np.linalg.norm(np.array(pt) - self.coords)
+
+    def __eq__(self, other):
+        """
+        Marker is equal to another marker if the label and properties are the
+        same, and the coordinates are the same to some tolerance.  numpy
+        function `allclose` is used to determine if coordinates are close.
+        """
+        if other is None:
+            return False
+        return (
+            self.label == other.label
+            and np.allclose(self.coords, other.coords, atol=Site.position_atol)
+            and self.properties == other.properties
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """
+        Minimally effective hash function that just distinguishes between marker
+        with different coordinates.
+        """
+        return sum(self.coords)
+
+    def __repr__(self):
+        return "Marker: {} ({:.4f}, {:.4f}, {:.4f})".format(
+            self.label *self.coords
+        )
+
+
+    def __str__(self):
+        return "{} {}".format(self.coords, self.label)
+
+    def as_dict(self):
+        """
+        Json-serializable dict representation for Marker.
+        """
+        d = {
+            "label": self.label,
+            "xyz": [float(c) for c in self.coords],
+            "properties": self.properties,
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+        }
+        if self.properties:
+            d["properties"] = self.properties
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        """
+        Create Marker from dict representation
+        """
+        props = d.get("properties", None)
+        if props is not None:
+            for key in props.keys():
+                props[key] = json.loads(
+                    json.dumps(props[key], cls=MontyEncoder), cls=MontyDecoder
+                )
+        return cls(d["label"], d["xyz"], properties=props)
+
+
 
 class PeriodicMarker(Marker, MSONable):
     """
