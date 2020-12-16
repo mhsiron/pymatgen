@@ -37,17 +37,6 @@ class Marker(collections.abc.Hashable, MSONable):
         self.properties = properties
 
     @property
-    def label(self) -> str:
-        """
-        :return: The label on the marker
-        """
-        return self.label  # type: ignore
-
-    @label.setter
-    def species(self, label):
-        self.label = label
-
-    @property
     def x(self):
         """
         Cartesian x coordinate
