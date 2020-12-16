@@ -19,6 +19,31 @@ from pymatgen.core.lattice import Lattice
 from pymatgen.core.periodic_table import DummySpecies, Element, Species, get_el_sp
 from pymatgen.util.coord import pbc_diff
 
+class Marker(collections.abc.Hashable, MSONable):
+    """
+    Similar to a site, but without any chemistry associated with it.
+    A representation in a structure, for example to mark the place of an
+     adsorption site without adding an actual adsorbate.
+    """
+    pass
+
+class PeriodicMarker(Marker, MSONable):
+    """
+    Periodic Marker.
+    """
+    pass
+
+class Path(collections.abc.Hashable, MSONable):
+    """
+    Similar to Marker, Site, but to mark a path through a structure,
+    for example, to mark
+    """
+    pass
+
+class PeriodicPath(Path, MSONable):
+    """ Periodic Path"""
+    pass
+
 
 class Site(collections.abc.Hashable, MSONable):
     """
