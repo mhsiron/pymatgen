@@ -1,11 +1,11 @@
 Change log
 ==========
 
-v2019.5.1
----------
-* Small speeds to Structure.get_all_neighbors.
-* Big fixes for gulp_caller. (@kmu)
-* Plot fatbands from Lobster. (@jageo)
-* Speed up get_ir_mesh (@utf)
-* Parsing of plasma frequencies from Outcar.
-* Miscellaneous bug fixes.
+v2020.12.3
+----------
+* Site insertion algorithm based on charge density (@jmmshn, #1997)
+* Allow calculation of Fermi level from occupancies in VASP calculation (@rkingsbury, #2000)
+* Improvement to legibility of 3D phase diagram plots (@bayesfactor, #1999)
+* Improvement to allow general input for exciting (@vorwerkc, #1975)
+* Improvements to code formatting (@mkhorton, #2008)
+* Bug fix for VASP run type detection (@rkingsbury, #1996)
